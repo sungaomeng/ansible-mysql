@@ -1,0 +1,20 @@
+---
+#主、从数据库mysql服务部署
+- hosts: all
+  gather_facts: False
+  roles:
+    - mysql-all
+
+#主库为同步授权
+- hosts: masters
+  gather_facts: False
+  roles:
+    - mysql-master
+
+#从库获取同步点并开启同步
+- hosts: slaves
+  gather_facts: False
+  roles:
+    - mysql-slave
+
+#备注：此环境为全库同步，若需要配置部分库同步，可更新/etc/my.cnf指定配置并重启数据库

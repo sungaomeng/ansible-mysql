@@ -1,0 +1,69 @@
+---
+- name: Install environment
+  yum:
+   name: ['readline-devel', 'readline', 'perl', 'perl-devel', 'time', 'numactl-devel', 'libaio', 'libaio-devel', 'perl-Time-HiRes', 'perl-DBD-MySQL', 'MySQL-python', 'gcc-c++', 'zlib-devel', 'cmake', 'unzip']
+   state: latest
+
+- name: groupadd mysql
+  group: 
+    name: mysql
+    #gid: 888
+        
+- name: useradd mysql
+  user: 
+    name: mysql
+    #uid: 888
+    createhome: no
+    shell: /sbin/nologin
+
+- name: get MySQL install file
+  get_url: url=http://roobo-archive.oss-cn-beijing.aliyuncs.com/op/soft/aisaas/{{ item }} dest={{ source_dir }}/{{ item }}
+  with_items:
+    - "{{ mysql_version }}.tar.gz"
+        
+#- name: Copy MySQL install file
+#  copy: src={{ item }} dest={{ source_dir }}/{{ item }} mode=0640 owner=root group=root
+#  with_items:
+#    - "{{ mysql_version }}.tar.gz"
+
+- name: Unzip MYsql.tar.gz
+  unarchive: src={{ source_dir }}/{{ item }} dest={{ source_dir }} remote_src=yes
+  with_items:
+    - "{{ mysql_version }}.tar.gz"
+
+- name: rename install file
+  shell: "mv {{ source_dir }}/{{ mysql_version }} {{ install_dir }}"
+        
+- name: Copy MySQL conf file
+  copy: src={{ item }} dest=/etc/{{ item }} mode=0640 owner=root group=root
+  with_items:
+    - "my.cnf"
+        
+- name: Init Mysql
+  shell: "{{ install_dir }}/scripts/mysql_install_db --defaults-file=/etc/{{ item }} --basedir={{ install_dir }} --datadir={{ data_dir }} --user=mysql"
+  with_items:
+    - "my.cnf"
+  
+- name: Set Mysql User Dir Privileges
+  file: path={{ item }} owner=mysql group=mysql recurse=yes mode=0755
+  with_items:
+    - "{{ install_dir }}"
+    - "{{ data_dir }}"
+
+- name: Copy Mysql Start Shell 
+  copy: src={{ install_dir }}/support-files/mysql.server dest=/etc/init.d/mysqld remote_src=yes owner=root group=root mode=0755
+
+- name: Make Mysql Link
+  file: src={{ install_dir }}/bin/{{ item }} dest=/usr/bin/{{ item }} state=link force=yes
+  with_items:
+    - "mysql"
+    - "mysqld"
+    - "mysqlbinlog"
+    - "mysqldump"
+    - "mysqld_safe"
+        
+- name: Start Mysql Service
+  service: 
+    name: mysqld 
+    state: restarted
+    enabled: yes

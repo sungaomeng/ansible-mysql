@@ -1,0 +1,6 @@
+mysql_port: 3306
+repl_user: mysql_repl
+mysql_repl_master: 192.168.1.69
+mysql_root_pwd: 123
+repl_pass: roobo123
+socket: /tmp/mysql.sock

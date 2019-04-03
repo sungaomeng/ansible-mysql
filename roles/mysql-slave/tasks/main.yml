@@ -1,0 +1,38 @@
+---
+- name: update mysql root password for all root accounts
+  mysql_user: login_host=127.0.0.1 login_user=root login_password="" name=root host={{ item }} password={{ mysql_root_pwd }}
+  with_items:
+   - 127.0.0.1
+
+- name: ensure anonymous users are not in the database
+  mysql_user: name='' host={{ item }} login_user=root login_password={{ mysql_root_pwd }} state=absent
+  with_items:
+   - localhost
+
+- name: update server-id
+  replace: path={{ item }} regexp="server-id = 11" replace="server-id = 22"
+  with_items:
+    - "/etc/my.cnf"
+
+- name: Restart Mysql Service
+  service:
+    name: mysqld
+    state: restarted
+    enabled: yes
+
+- name: check if slave is already configured for replication
+  mysql_replication: login_unix_socket={{ socket }} login_user=root login_password=""  mode=getslave
+  ignore_errors: true
+  register: slave
+
+- name: get the current master servers replication status
+  mysql_replication: login_unix_socket={{ socket }} login_user=root login_password="" mode=getmaster
+  delegate_to: "{{ mysql_repl_master }}"
+  register: repl_master_status
+
+- name: change the master on slave to start the replication
+  mysql_replication: login_unix_socket={{ socket }} login_user=root login_password="" mode=changemaster master_host={{ mysql_repl_master }} master_port={{ mysql_port }} master_log_file={{ repl_master_status.File }} master_log_pos={{ repl_master_status.Position }} master_user={{ repl_user }} master_password={{ repl_pass }}
+  ignore_errors: true
+
+- name: start slave on slave to start the replication
+  mysql_replication: login_unix_socket={{ socket }} login_user=root login_password="" mode=startslave

@@ -1,0 +1,5 @@
+mysql_port: 3306
+repl_user: mysql_repl
+repl_pass: roobo123
+priv: '*.*:REPLICATION SLAVE'
+mysql_root_pwd: 123

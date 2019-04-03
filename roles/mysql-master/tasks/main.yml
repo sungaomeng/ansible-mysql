@@ -1,0 +1,14 @@
+---
+- name: update mysql root password for all root accounts
+  mysql_user: login_host=127.0.0.1 login_user=root login_password="" name=root host={{ item }} password={{ mysql_root_pwd }}
+  with_items:
+   - 127.0.0.1
+
+- name: ensure anonymous users are not in the database 
+  mysql_user: name='' host={{ item }} login_user=root login_password={{ mysql_root_pwd }} state=absent 
+  with_items: 
+   - localhost 
+
+- name: create repl user
+  mysql_user: login_host=127.0.0.1 login_port={{ mysql_port }} login_user=root login_password={{ mysql_root_pwd }}  name={{ repl_user }} password={{ repl_pass }} priv={{ priv }} state=present host="%"
+
